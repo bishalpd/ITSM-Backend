@@ -1,0 +1,14 @@
+netstat -ano | findstr :8000
+
+run python web app:
+
+python -m venv .venv
+
+source .venv/Scripts/activate
+
+uvicorn main:app --reload
+ 
+taskkill //PID 1344 //F
+
+alembic revision --autogenerate -m "create app config table"
+alembic upgrade head
