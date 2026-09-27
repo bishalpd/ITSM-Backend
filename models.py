@@ -15,7 +15,7 @@ class UserRole(str, enum.Enum):
     AGENT = "agent"
     ADMIN = "admin"
 
-class TicketType(str, enum.Enum):
+class  TicketType(str, enum.Enum):
     INCIDENT = "incident"
     SERVICE_REQUEST = "service_request"
 
