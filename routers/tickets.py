@@ -4,12 +4,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from db import get_db
-from depedencies.auth import get_current_user
+from depedencies.auth import get_current_user,require_role
 from models import User,Category,Ticket
-from depedencies.auth import require_role
-from schemas.tickets import TicketResponseWithData,TicketCreate,TicketResponse
+from schemas.tickets import TicketResponseWithData,TicketCreate,TicketResponse,TicketListResponse,TicketListItem
 from uuid import uuid4
 from models import TicketType,TicketPriority,TicketStatus
+from math import ceil
 
 
 
@@ -49,3 +49,79 @@ async def create_ticket(payload:TicketCreate,db:AsyncSession = Depends(get_db),c
         message="Ticket created successfully",
         success=True,
     )
+
+@router.get("",response_model=TicketListResponse,status_code=status.HTTP_200_OK,
+)
+async def get_all_tickets(
+        page:int = Query(default=1,ge=1),
+        page_size:int = Query(default=10,ge=1,le=100),
+
+        ticket_status:TicketStatus | None = Query(default=None),
+        priority: TicketPriority | None = Query(default=None),
+        ticket_type: TicketType | None = Query(default=None),
+        category_id: int | None = Query(default=None),
+        db:AsyncSession=Depends(get_db),
+        current_user:User = Depends(require_role("admin","agent"))):
+
+        filters = []
+
+        if ticket_status is not None:
+             filters.append(
+                  Ticket.status == ticket_status
+             )
+
+        if priority is not None:
+             filters.append(
+                  Ticket.priority == priority
+             )
+
+        if ticket_type is not None:
+            filters.append(
+                Ticket.ticket_type == ticket_type
+            )
+
+        if category_id is not None:
+            filters.append(
+                Ticket.category_id == category_id
+            )
+
+        count_query = select(func.count(Ticket.id)).where(*filters)
+
+        total_result = await db.execute(
+             count_query
+        )
+
+        total = total_result.scalar_one()
+
+        offset = (page-1) * page_size
+
+        query = (
+             select(Ticket)
+             .options(
+                selectinload(Ticket.requester),
+                selectinload(Ticket.assigned_agent),
+                selectinload(Ticket.category),
+             )
+             .where(*filters)
+             .order_by(Ticket.created_at.desc())
+             .offset(offset)
+             .limit(page_size)
+        )
+
+        result = await db.execute(query)
+
+        tickets = result.scalars().all()
+
+        return TicketListResponse(
+            data = [
+                TicketListItem.model_validate(ticket)
+                for ticket in tickets
+             ],
+            total=total,
+            page=page,
+            page_size=page_size,
+            total_pages=ceil(total / page_size),
+            status=status.HTTP_200_OK,
+            message="Tickets retrieved successfully",
+            success=True,
+            )
