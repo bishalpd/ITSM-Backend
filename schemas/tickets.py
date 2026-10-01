@@ -16,6 +16,29 @@ class CategoryShortResponse(BaseModel):
     id:int
     name:str
 
+
+class TicketCommentResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    comment: str
+    user_id: int
+    created_at: datetime
+
+    user: UserShortResponse
+
+class TicketHistoryResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    field_name: str
+    old_value: str | None
+    new_value: str | None
+    changed_by_id: int
+    created_at: datetime
+
+    changed_by: UserShortResponse
+
 class TicketResponse(BaseModel):
     model_config = ConfigDict(
         from_attributes=True
@@ -91,6 +114,42 @@ class TicketListResponse(BaseModel):
     page_size: int
     total_pages: int
 
+    status: int
+    message: str
+    success: bool
+
+class TicketDetailResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    ticket_number: str
+    title: str
+    description: str | None
+
+    ticket_type: TicketType
+    status: TicketStatus
+    priority: TicketPriority
+
+    requester_id: int
+    assigned_agent_id: int | None
+    category_id: int
+
+    resolution: str | None
+    resolved_at: datetime | None
+    closed_at: datetime | None
+
+    created_at: datetime
+    updated_at: datetime
+
+    requester: UserShortResponse
+    assigned_agent: UserShortResponse | None
+    category: CategoryShortResponse
+
+    comments: list[TicketCommentResponse] = []
+    history: list[TicketHistoryResponse] = []
+
+class TicketDetailResponseWithData(BaseModel):
+    data: TicketDetailResponse
     status: int
     message: str
     success: bool

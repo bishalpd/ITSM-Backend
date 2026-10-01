@@ -6,7 +6,7 @@ from sqlalchemy.orm import selectinload
 from db import get_db
 from depedencies.auth import get_current_user,require_role
 from models import User,Category,Ticket
-from schemas.tickets import TicketResponseWithData,TicketCreate,TicketResponse,TicketListResponse,TicketListItem
+from schemas.tickets import TicketResponseWithData,TicketCreate,TicketResponse,TicketListResponse,TicketListItem,TicketDetailResponseWithData,TicketDetailResponse
 from uuid import uuid4
 from models import TicketType,TicketPriority,TicketStatus
 from math import ceil
@@ -125,3 +125,31 @@ async def get_all_tickets(
             message="Tickets retrieved successfully",
             success=True,
             )
+
+@router.get("/{ticket_id}",response_model=TicketDetailResponseWithData,status_code=status.HTTP_200_OK)
+async def get_ticket_by_id(ticket_id:int,db:AsyncSession=Depends(get_db),current_user:User = Depends(get_current_user)):
+     query = (select(Ticket).options(
+            selectinload(Ticket.requester),
+            selectinload(Ticket.assigned_agent),
+            selectinload(Ticket.category),
+            selectinload(Ticket.comments),
+            selectinload(Ticket.history),
+     )
+     .where(Ticket.id == ticket_id)
+     )
+
+     result = await db.execute(query)
+
+     ticket = result.scalar_one_or_none()
+
+     if ticket is None:
+          raise HTTPException(
+               status_code = status.HTTP_404_NOT_FOUND,
+               detail="Ticket not found"
+          )
+     return TicketDetailResponseWithData(
+          data = TicketDetailResponse.model_validate(ticket),
+          status = status.HTTP_200_OK,
+          message = "Ticket retrieved successfully",
+          success = True,
+        )
