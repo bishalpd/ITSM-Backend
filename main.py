@@ -6,6 +6,7 @@ from models import Base
 from routers import auth
 from routers import categories
 from routers import tickets
+from routers import users
 
 app = FastAPI(
     title="ServiceDesk API",
@@ -34,5 +35,9 @@ app.include_router(
 
 app.include_router(
     tickets.router,
+    prefix="/api/v1"
+)
+app.include_router(
+    users.router,
     prefix="/api/v1"
 )

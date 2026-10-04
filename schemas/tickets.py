@@ -153,3 +153,53 @@ class TicketDetailResponseWithData(BaseModel):
     status: int
     message: str
     success: bool
+
+class MyTicketItem(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    ticket_number: str
+    title: str
+    description: str | None
+
+    ticket_type: TicketType
+    status: TicketStatus
+    priority: TicketPriority
+
+    category_id: int
+    assigned_agent_id: int | None
+
+    category: CategoryShortResponse
+    assigned_agent: UserShortResponse | None
+
+    resolution: str | None
+    resolved_at: datetime | None
+    closed_at: datetime | None
+
+    created_at: datetime
+    updated_at: datetime
+
+
+class MyTicketListResponse(BaseModel):
+    data: list[MyTicketItem]
+
+    total: int
+    page: int
+    page_size: int
+    total_pages: int
+
+    status: int
+    message: str
+    success: bool
+
+class TicketStatusUpdate(BaseModel):
+    status: TicketStatus
+    resolution: str | None = Field(
+        default=None,
+        max_length=2000,
+    )
+
+class TicketStatusUpdateResponse(BaseModel):
+    status:int
+    message:str
+    success:bool

@@ -126,30 +126,30 @@ class Ticket(Base):
     history: Mapped[list[TicketHistory]] = relationship("TicketHistory", back_populates="ticket",cascade="all, delete-orphan")
 
     # ticket comment
-    class TicketComment(Base):
-        __tablename__ = "ticket_comments"
+class TicketComment(Base):
+    __tablename__ = "ticket_comments"
 
-        id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-        ticket_id: Mapped[int] = mapped_column(ForeignKey("tickets.id",ondelete="CASCADE"), index=True, nullable=False)
-        author_id: Mapped[int] = mapped_column(ForeignKey("users.id",ondelete="RESTRICT"), index=True, nullable=False)
-        message : Mapped[str] = mapped_column(Text, nullable=False)
-        is_internal: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
-        created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
-        updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
-        ticket: Mapped[Ticket] = relationship("Ticket", back_populates="comments")
-        author: Mapped[User] = relationship("User", back_populates="comments")
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    ticket_id: Mapped[int] = mapped_column(ForeignKey("tickets.id",ondelete="CASCADE"), index=True, nullable=False)
+    author_id: Mapped[int] = mapped_column(ForeignKey("users.id",ondelete="RESTRICT"), index=True, nullable=False)
+    message : Mapped[str] = mapped_column(Text, nullable=False)
+    is_internal: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
+    ticket: Mapped[Ticket] = relationship("Ticket", back_populates="comments")
+    author: Mapped[User] = relationship("User", back_populates="comments")
 
 
     # ticket history
-    class TicketHistory(Base):
-        __tablename__ = "ticket_history"
+class TicketHistory(Base):
+    __tablename__ = "ticket_history"
 
-        id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-        ticket_id: Mapped[int] = mapped_column(ForeignKey("tickets.id",ondelete="CASCADE"), index=True, nullable=False)
-        changed_by_id: Mapped[int] = mapped_column(ForeignKey("users.id",ondelete="RESTRICT"), index=True, nullable=False)
-        field_name: Mapped[str] = mapped_column(String(100), nullable=False)
-        old_value: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-        new_value: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-        created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
-        ticket: Mapped[Ticket] = relationship("Ticket", back_populates="history")
-        changed_by: Mapped[User] = relationship("User", back_populates="ticket_history_entries")
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    ticket_id: Mapped[int] = mapped_column(ForeignKey("tickets.id",ondelete="CASCADE"), index=True, nullable=False)
+    changed_by_id: Mapped[int] = mapped_column(ForeignKey("users.id",ondelete="RESTRICT"), index=True, nullable=False)
+    field_name: Mapped[str] = mapped_column(String(100), nullable=False)
+    old_value: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    new_value: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    ticket: Mapped[Ticket] = relationship("Ticket", back_populates="history")
+    changed_by: Mapped[User] = relationship("User", back_populates="ticket_history_entries")
