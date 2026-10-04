@@ -1,20 +1,22 @@
 from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict, Field
-from models import TicketType,TicketPriority,TicketStatus
+from models import TicketType, TicketPriority, TicketStatus
+
 
 class UserShortResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
-    id:int
-    name:str
-    email:str
+    id: int
+    name: str
+    email: str
+
 
 class CategoryShortResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
-    id:int
-    name:str
+    id: int
+    name: str
 
 
 class TicketCommentResponse(BaseModel):
@@ -26,6 +28,7 @@ class TicketCommentResponse(BaseModel):
     created_at: datetime
 
     user: UserShortResponse
+
 
 class TicketHistoryResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
@@ -39,10 +42,9 @@ class TicketHistoryResponse(BaseModel):
 
     changed_by: UserShortResponse
 
+
 class TicketResponse(BaseModel):
-    model_config = ConfigDict(
-        from_attributes=True
-    )
+    model_config = ConfigDict(from_attributes=True)
 
     id: int
     ticket_number: str
@@ -65,6 +67,7 @@ class TicketResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
 
+
 class TicketCreate(BaseModel):
     title: str = Field(
         min_length=3,
@@ -84,19 +87,20 @@ class TicketResponseWithData(BaseModel):
     message: str
     success: bool
 
+
 class TicketListItem(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
-    id:int
-    ticket_number:str
-    title:str
-    description:str|None
+    id: int
+    ticket_number: str
+    title: str
+    description: str | None
     ticket_type: TicketType
     status: TicketStatus
     priority: TicketPriority
-    requester_id:int
-    assigned_agent_id:int|None
-    category_id:int
+    requester_id: int
+    assigned_agent_id: int | None
+    category_id: int
     requester: UserShortResponse
     assigned_agent: UserShortResponse | None
     category: CategoryShortResponse
@@ -105,6 +109,7 @@ class TicketListItem(BaseModel):
     closed_at: datetime | None
     created_at: datetime
     updated_at: datetime
+
 
 class TicketListResponse(BaseModel):
     data: list[TicketListItem]
@@ -117,6 +122,7 @@ class TicketListResponse(BaseModel):
     status: int
     message: str
     success: bool
+
 
 class TicketDetailResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
@@ -148,11 +154,13 @@ class TicketDetailResponse(BaseModel):
     comments: list[TicketCommentResponse] = []
     history: list[TicketHistoryResponse] = []
 
+
 class TicketDetailResponseWithData(BaseModel):
     data: TicketDetailResponse
     status: int
     message: str
     success: bool
+
 
 class MyTicketItem(BaseModel):
     model_config = ConfigDict(from_attributes=True)
@@ -192,6 +200,7 @@ class MyTicketListResponse(BaseModel):
     message: str
     success: bool
 
+
 class TicketStatusUpdate(BaseModel):
     status: TicketStatus
     resolution: str | None = Field(
@@ -199,7 +208,25 @@ class TicketStatusUpdate(BaseModel):
         max_length=2000,
     )
 
+
 class TicketStatusUpdateResponse(BaseModel):
-    status:int
-    message:str
-    success:bool
+    status: int
+    message: str
+    success: bool
+
+
+class TicketAssignData(BaseModel):
+    ticket_id: int
+    ticket_number: str
+    assigned_agent: UserShortResponse
+
+
+class TicketAssignResponse(BaseModel):
+    data: TicketAssignData
+    status: int
+    message: str
+    success: bool
+
+
+class TicketAssignRequest(BaseModel):
+    agent_id: int = Field(gt=0)
