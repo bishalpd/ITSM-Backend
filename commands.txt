@@ -12,3 +12,4 @@ taskkill //PID 1344 //F
 
 alembic revision --autogenerate -m "create app config table"
 alembic upgrade head
+pip install alembic greenlet

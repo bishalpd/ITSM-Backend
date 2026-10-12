@@ -135,17 +135,29 @@ class Ticket(Base):
     title: Mapped[str] = mapped_column(String(200), nullable=False)
     description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     ticket_type: Mapped[TicketType] = mapped_column(
-        Enum(TicketType, name="ticket_type"),
+        Enum(
+            TicketType,
+            name="ticket_type",
+            values_callable=lambda enum_class: [member.value for member in enum_class],
+        ),
         default=TicketType.INCIDENT,
         nullable=False,
     )
     status: Mapped[TicketStatus] = mapped_column(
-        Enum(TicketStatus, name="ticket_status"),
+        Enum(
+            TicketStatus,
+            name="ticket_status",
+            values_callable=lambda enum_class: [member.value for member in enum_class],
+        ),
         default=TicketStatus.OPEN,
         nullable=False,
     )
     priority: Mapped[TicketPriority] = mapped_column(
-        Enum(TicketPriority, name="ticket_priority"),
+        Enum(
+            TicketPriority,
+            name="ticket_priority",
+            values_callable=lambda enum_class: [member.value for member in enum_class],
+        ),
         default=TicketPriority.MEDIUM,
         nullable=False,
     )
@@ -197,10 +209,14 @@ class Ticket(Base):
     history: Mapped[list[TicketHistory]] = relationship(
         "TicketHistory", back_populates="ticket", cascade="all, delete-orphan"
     )
+    attachments: Mapped[list["TicketAttachment"]] = relationship(
+        "TicketAttachment",
+        back_populates="ticket",
+        cascade="all, delete-orphan",
+    )
 
-    # ticket comment
 
-
+# ticket comment
 class TicketComment(Base):
     __tablename__ = "ticket_comments"
 
@@ -248,3 +264,38 @@ class TicketHistory(Base):
     changed_by: Mapped[User] = relationship(
         "User", back_populates="ticket_history_entries"
     )
+
+
+class TicketAttachment(Base):
+    __tablename__ = "ticket_attachments"
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+
+    ticket_id: Mapped[int] = mapped_column(
+        ForeignKey("tickets.id", ondelete="CASCADE"),
+        index=True,
+        nullable=False,
+    )
+
+    original_filename: Mapped[str] = mapped_column(String(255), nullable=False)
+
+    stored_filename: Mapped[str] = mapped_column(String(255), nullable=False)
+
+    file_path: Mapped[str] = mapped_column(String(500), nullable=False)
+
+    content_type: Mapped[str] = mapped_column(String(100), nullable=False)
+
+    file_size: Mapped[int] = mapped_column(nullable=False)
+
+    uploaded_by_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="RESTRICT"),
+        nullable=False,
+    )
+
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        nullable=False,
+    )
+
+    ticket: Mapped["Ticket"] = relationship("Ticket", back_populates="attachments")
