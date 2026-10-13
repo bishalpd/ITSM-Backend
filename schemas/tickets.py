@@ -3,6 +3,8 @@ from datetime import datetime
 from pydantic import BaseModel, ConfigDict, Field
 from models import TicketType, TicketPriority, TicketStatus
 
+from fastapi import Form
+
 
 class UserShortResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
@@ -66,6 +68,7 @@ class TicketResponse(BaseModel):
 
     created_at: datetime
     updated_at: datetime
+    attachments: list[TicketAttachmentResponse] = Field(default_factory=list)
 
 
 class TicketCreate(BaseModel):
@@ -79,6 +82,35 @@ class TicketCreate(BaseModel):
     priority: TicketPriority = TicketPriority.MEDIUM
     category_id: int
     assigned_agent_id: int | None = None
+
+    @classmethod
+    def as_form(
+        cls,
+        title: str = Form(...),
+        description: str | None = Form(None),
+        ticket_type: TicketType = Form(TicketType.INCIDENT),
+        priority: TicketPriority = Form(TicketPriority.MEDIUM),
+        category_id: int = Form(...),
+        assigned_agent_id: int | None = Form(None),
+    ):
+        return cls(
+            title=title,
+            description=description,
+            ticket_type=ticket_type,
+            priority=priority,
+            category_id=category_id,
+            assigned_agent_id=assigned_agent_id,
+        )
+
+
+class TicketAttachmentResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    original_filename: str
+    stored_filename: str
+    content_type: str
+    file_size: int
+    created_at: datetime
 
 
 class TicketResponseWithData(BaseModel):
@@ -109,6 +141,7 @@ class TicketListItem(BaseModel):
     closed_at: datetime | None
     created_at: datetime
     updated_at: datetime
+    attachments: list[TicketAttachmentResponse] = Field(default_factory=list)
 
 
 class TicketListResponse(BaseModel):
@@ -153,6 +186,7 @@ class TicketDetailResponse(BaseModel):
 
     comments: list[TicketCommentResponse] = []
     history: list[TicketHistoryResponse] = []
+    attachments: list[TicketAttachmentResponse] = Field(default_factory=list)
 
 
 class TicketDetailResponseWithData(BaseModel):

@@ -1,4 +1,16 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Response, Query
+from pathlib import Path
+from typing import Annotated
+from fastapi import (
+    APIRouter,
+    Depends,
+    HTTPException,
+    status,
+    Response,
+    Query,
+    File,
+    UploadFile,
+    Form,
+)
 from sqlalchemy import select, func, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -22,11 +34,16 @@ from schemas.tickets import (
     TicketListItem,
     TicketDetailResponseWithData,
     TicketDetailResponse,
+    TicketAttachmentResponse,
 )
 from uuid import uuid4
-from models import TicketType, TicketPriority, TicketStatus, UserRole
+from models import TicketType, TicketPriority, TicketStatus, UserRole, TicketAttachment
 from math import ceil
 from datetime import datetime, timedelta, timezone
+from utils.file_storage import (
+    MAX_FILES,
+    save_attachment,
+)
 
 router = APIRouter(
     prefix="/tickets",
@@ -44,34 +61,91 @@ def generate_ticket_number() -> str:
     status_code=status.HTTP_201_CREATED,
 )
 async def create_ticket(
-    payload: TicketCreate,
+    payload: TicketCreate = Depends(TicketCreate.as_form),
+    attachments: Annotated[
+        list[UploadFile],
+        File(
+            description="Upload ticket attachments",
+            json_schema_extra={
+                "items": {
+                    "type": "string",
+                    "format": "binary",
+                }
+            },
+        ),
+    ] = [],
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    ticket = Ticket(
-        ticket_number=generate_ticket_number(),
-        title=payload.title,
-        description=payload.description,
-        ticket_type=payload.ticket_type,
-        priority=payload.priority,
-        category_id=payload.category_id,
-        assigned_agent_id=None,
-        # Do NOT accept requester_id from frontend
-        requester_id=current_user.id,
-        # Backend-controlled initial status
-        status=TicketStatus.OPEN,
-    )
+    files = attachments or []
 
-    db.add(ticket)
-    await db.commit()
-    await db.refresh(ticket)
+    if len(files) > MAX_FILES:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Maximum {MAX_FILES} attachments allowed",
+        )
 
-    return TicketResponseWithData(
-        data=TicketResponse.model_validate(ticket),
-        status=status.HTTP_201_CREATED,
-        message="Ticket created successfully",
-        success=True,
-    )
+    saved_paths = []
+
+    try:
+        ticket = Ticket(
+            ticket_number=generate_ticket_number(),
+            title=payload.title,
+            description=payload.description,
+            ticket_type=payload.ticket_type,
+            priority=payload.priority,
+            category_id=payload.category_id,
+            assigned_agent_id=None,
+            requester_id=current_user.id,
+            status=TicketStatus.OPEN,
+        )
+
+        db.add(ticket)
+
+        # Obtain ticket.id without committing.
+        await db.flush()
+
+        attachment_records = []
+
+        for file in files:
+            saved_file = await save_attachment(file)
+
+            saved_paths.append(saved_file["file_path"])
+
+            attachment = TicketAttachment(
+                ticket_id=ticket.id,
+                uploaded_by_id=current_user.id,
+                **saved_file,
+            )
+
+            db.add(attachment)
+            attachment_records.append(attachment)
+
+        # Flush attachment inserts before committing.
+        await db.flush()
+
+        await db.refresh(ticket, attribute_names=["attachments"])
+        # Build response before commit, while attributes
+        # are available in the current session.
+        response_data = TicketResponse.model_validate(ticket)
+
+        await db.commit()
+
+        return TicketResponseWithData(
+            data=response_data,
+            status=status.HTTP_201_CREATED,
+            message="Ticket created successfully",
+            success=True,
+        )
+
+    except Exception:
+        await db.rollback()
+
+        # Clean up saved files if ticket creation fails.
+        for path in saved_paths:
+            Path(path).unlink(missing_ok=True)
+
+        raise
 
 
 @router.get(
@@ -118,6 +192,7 @@ async def get_all_tickets(
             selectinload(Ticket.requester),
             selectinload(Ticket.assigned_agent),
             selectinload(Ticket.category),
+            selectinload(Ticket.attachments),
         )
         .where(*filters)
         .order_by(Ticket.created_at.desc())
@@ -228,6 +303,7 @@ async def get_ticket_by_id(
             selectinload(Ticket.category),
             selectinload(Ticket.comments),
             selectinload(Ticket.history),
+            selectinload(Ticket.attachments),
         )
         .where(Ticket.id == ticket_id)
     )
