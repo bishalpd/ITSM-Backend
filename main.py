@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 
-from routers import auth, categories, tickets, users
+from routers import auth, categories, tickets, users, ai
 
 app = FastAPI(
     title="ServiceDesk API",
@@ -18,3 +18,7 @@ app.include_router(auth.router, prefix="/api/v1")
 app.include_router(categories.router, prefix="/api/v1")
 app.include_router(tickets.router, prefix="/api/v1")
 app.include_router(users.router, prefix="/api/v1")
+app.include_router(
+    ai.router,
+    prefix="/api/v1",
+)
