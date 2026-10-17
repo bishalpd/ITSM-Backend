@@ -1,5 +1,6 @@
 import os
 import httpx
+from schemas.ai import TicketAISuggestionRaw
 
 OLLAMA_BASE_URL = os.getenv(
     "OLLAMA_BASE_URL",
@@ -22,7 +23,7 @@ async def ask_ollama(
             json={
                 "model": OLLAMA_MODEL,
                 "stream": False,
-                "format": "json",
+                "format": TicketAISuggestionRaw.model_json_schema(),
                 "messages": [
                     {
                         "role": "system",

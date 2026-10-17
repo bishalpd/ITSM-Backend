@@ -14,9 +14,11 @@ class TicketAISuggestionRaw(BaseModel):
     category_id: int
     priority: TicketPriority
     ticket_type: TicketType
-    reason: str = Field(max_length=500)
+
+    category_reason: str = Field(min_length=10, max_length=500)
+    priority_reason: str = Field(min_length=10, max_length=500)
+    ticket_type_reason: str = Field(min_length=10, max_length=500)
 
 
-# FastAPI returns this structure to Next.js
 class TicketAISuggestion(TicketAISuggestionRaw):
     category_name: str
