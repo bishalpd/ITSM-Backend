@@ -264,3 +264,42 @@ class TicketAssignResponse(BaseModel):
 
 class TicketAssignRequest(BaseModel):
     agent_id: int = Field(gt=0)
+
+
+class AssignedTicketResponse(BaseModel):
+    id: int
+    ticket_number: str
+    title: str
+    description: str | None = None
+
+    ticket_type: str
+    status: str
+    priority: str
+
+    category_id: int | None
+    category_name: str | None
+
+    requester_id: int
+    requester_name: str
+
+    assigned_agent_id: int | None
+    assigned_agent_name: str | None
+
+    created_at: datetime
+    updated_at: datetime | None = None
+    attachments: list[TicketAttachmentResponse] = Field(default_factory=list)
+
+
+class PaginationResponse(BaseModel):
+    page: int
+    page_size: int
+    total: int
+    total_pages: int
+
+
+class AssignedTicketsWithData(BaseModel):
+    data: list[AssignedTicketResponse]
+    pagination: PaginationResponse
+    status: int = 200
+    message: str = "Assigned tickets fetched successfully"
+    success: bool = True

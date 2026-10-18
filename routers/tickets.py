@@ -35,11 +35,17 @@ from schemas.tickets import (
     TicketDetailResponseWithData,
     TicketDetailResponse,
     TicketAttachmentResponse,
+    AssignedTicketResponse,
+    AssignedTicketsWithData,
+    PaginationResponse,
 )
 from uuid import uuid4
 from models import TicketType, TicketPriority, TicketStatus, UserRole, TicketAttachment
 from math import ceil
 from datetime import datetime, timedelta, timezone
+from services.tickets.tickets_service import (
+    get_assigned_tickets,
+)
 from utils.file_storage import (
     MAX_FILES,
     save_attachment,
@@ -282,6 +288,34 @@ async def get_my_tickets(
         status=status.HTTP_200_OK,
         message="My tickets retrieved successfully",
         success=True,
+    )
+
+
+@router.get(
+    "/assigned-to-me",
+    response_model=AssignedTicketsWithData,
+    status_code=status.HTTP_200_OK,
+)
+async def assigned_to_me(
+    search: str | None = Query(default=None),
+    priority: TicketPriority | None = Query(default=None),
+    category_id: int | None = Query(default=None, ge=1),
+    ticket_status: TicketStatus | None = Query(default=None),
+    page: int = Query(default=1, ge=1),
+    page_size: int = Query(default=10, ge=1, le=100),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(require_role("agent", "employee")),
+):
+
+    return await get_assigned_tickets(
+        db=db,
+        current_user_id=current_user.id,
+        search=search,
+        priority=priority,
+        category_id=category_id,
+        ticket_status=ticket_status,
+        page=page,
+        page_size=page_size,
     )
 
 
