@@ -336,12 +336,12 @@ async def get_ticket_by_id(
             selectinload(Ticket.assigned_agent),
             selectinload(Ticket.category),
             selectinload(Ticket.comments),
-            selectinload(Ticket.history),
+            selectinload(Ticket.history).selectinload(TicketHistory.changed_by),
             selectinload(Ticket.attachments),
         )
         .where(Ticket.id == ticket_id)
     )
-
+    print(f"query:{query}")
     result = await db.execute(query)
 
     ticket = result.scalar_one_or_none()
@@ -350,6 +350,7 @@ async def get_ticket_by_id(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Ticket not found"
         )
+
     return TicketDetailResponseWithData(
         data=TicketDetailResponse.model_validate(ticket),
         status=status.HTTP_200_OK,

@@ -14,3 +14,5 @@ alembic revision --autogenerate -m "create app config table"
 alembic upgrade head
 pip install alembic greenlet
 pip install python-multipart
+pip install google-genai
+pip install pydantic-settings

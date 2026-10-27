@@ -6,6 +6,15 @@ import logging
 
 from db import get_db
 from schemas.ai import TicketAIRequest, TicketAISuggestion
+from schemas.ai_support import (
+    SupportAnalyzeRequest,
+    SupportAnalysisWithData,
+)
+from services.ai.gemini_client import GeminiServiceError
+
+from services.ai.support_service import (
+    analyze_employee_issue,
+)
 from services.ai.ticket_ai import analyze_ticket
 from depedencies.auth import get_current_user
 from models import User
@@ -59,4 +68,28 @@ async def analyze_ticket_endpoint(
         raise HTTPException(
             status_code=422,
             detail="AI returned an invalid classification",
+        )
+
+
+@router.post(
+    "/create-analyzed-ticket",
+    response_model=SupportAnalysisWithData,
+    status_code=200,
+)
+async def analyze_support_issue(
+    payload: SupportAnalyzeRequest,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    try:
+        return await analyze_employee_issue(
+            db=db,
+            problem=payload.problem,
+        )
+
+    except GeminiServiceError:
+        raise HTTPException(
+            status_code=503,
+            detail="AI support is temporarily unavailable. "
+            "You can still create a ticket manually.",
         )
